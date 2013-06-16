@@ -1,0 +1,3 @@
+parser bei processLine aufrufen
+NICHT "System" nutzen
+"prompt" ändern nur bei jedem "cd ..."

@@ -20,7 +20,7 @@ struct cmds *command;
 char cwd[1024];
 
 /* prototype -> processes read in line */
-void processLine(const char *);
+void processLine(/*const*/ char *);
 
 /* flag to signal exit */
 static unsigned char quit = 0;
@@ -38,18 +38,23 @@ int main(void)
 	char *user;
 	char *host;
 
-	/* setting user variables for prompt */
-	user = getenv("USER");
-	host = getenv("HOSTNAME");
-
 	/* create custom prompt text */
 	prompt = malloc(50);
 	memset(prompt, 0, 50); //??
-	
-       if (getcwd(cwd, sizeof(cwd)) == NULL)
+
+	/* setting user variables for prompt */	 //IMMER GETENV nutzen?
+	if (getcwd(cwd, sizeof(cwd)) == NULL)
            perror("getcwd() error");
 
-	sprintf(prompt, "%s@%s:~%s$ ", user, host, cwd);
+	user = getenv("USER");
+	host = getenv("HOSTNAME");
+	if (host==NULL)
+	{	char hostname[256];
+		gethostname(hostname,256);
+		sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd);
+	}
+	else
+		sprintf(prompt, "%s@%s:~%s$ ", user, host, cwd);
 
 	printf("\nWilkommen!\n");
 
@@ -78,7 +83,7 @@ int main(void)
 }
 
 /* process input stored in line i.e. print line */
-void processLine(const char * line) 
+void processLine(/*const*/ char * line) 
 {
 	command = parser_parse(line);
 
@@ -86,8 +91,9 @@ void processLine(const char * line)
 	//printf("%zd - %s\n", strlen(line), line);
 
 	/* check if user wants to quit */
-	if (!strcmp("quit", line)) {
+	if (!strcmp("exit", line)) {
 		quit = 1;
+		printf("\nBis bald!\n\n");
 		return;
 	}
 

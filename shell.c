@@ -15,7 +15,8 @@
 
 #include "parser.h"
 
-struct cmds *command;
+//struct cmds* command; //TODO: struct/static??
+static cmds* command;
 
 char cwd[1024];
 
@@ -42,7 +43,10 @@ int main(void)
 	prompt = malloc(50);
 	memset(prompt, 0, 50); //??
 
-	/* setting user variables for prompt */	 //IMMER GETENV nutzen?
+	//TODO: immer für prompt GETENV nutzen??
+
+	/* setting user variables for prompt */
+	// TODO: im home oder aktuellen verzeichnis starten?
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
            perror("getcwd() error");
 
@@ -51,7 +55,7 @@ int main(void)
 	if (host==NULL)
 	{	char hostname[256];
 		gethostname(hostname,256);
-		sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd);
+		sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd); // TODO: verschwindet
 	}
 	else
 		sprintf(prompt, "%s@%s:~%s$ ", user, host, cwd);
@@ -90,25 +94,57 @@ void processLine(/*const*/ char * line)
 	/* print length and content of line */
 	//printf("%zd - %s\n", strlen(line), line);
 
-	/* check if user wants to quit */
-	if (!strcmp("exit", line)) {
-		quit = 1;
-		printf("\nBis bald!\n\n");
-		return;
-	}
-
-	switch(command->kind) 
+	// loop until there is no command left
+	while(command != NULL) 
 	{
-		case CD:
-			if(chdir(command->cd.path) == -1)
-				perror("no such directory");
-			else
-			{
-       				if (getcwd(cwd, sizeof(cwd)) == NULL)
-           				perror("getcwd() error");
-			}
-			break;
-		default:
-			printf("command not found\n");
+		switch(command->kind) // found the kinds in function parser_free
+		{
+			case EXIT: // check if user wants to quit
+				quit = 1;
+				printf("\nShell beendet.\n\n");
+				return;
+			/*case JOB :
+				break;*/
+			case CD: // change directory
+				if(chdir(command->cd.path) == -1)
+					perror("no such directory");
+				else
+				{	if (getcwd(cwd, sizeof(cwd)) == NULL)
+	           				perror("getcwd() error");
+				}
+				break;
+			case ENV : //TODO: bei "setenv" ohne argument/1 argument läuft nicht hier rein
+				if(command->env.value != NULL) // set environment var
+				{
+					if((getenv(command->env.name)) != NULL)
+						printf("Variable already exists\n");
+					else
+					{	setenv(command->env.name, command->env.value, 0); 
+								// 0==NoOverwrite?
+						printf("Variable set.\n");
+					}
+				}
+				else if(command->env.name != NULL) // unset environment var
+				{
+					if((getenv(command->env.name)) != NULL)
+					{
+						unsetenv(command->env.name);
+						printf("Variable unset.\n");
+					}
+					else
+						printf("Variable does not exist.\n");
+				}
+				else // TODO: läuft gar nicht in diesen pfad
+					printf("Bad arguments.\n");
+				break;
+			/*case PROG : case PIPE :
+				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
+				//break;*/
+			default:
+				printf("command not found\n");
+		}
+		// get next command
+		command = command->next;
 	}
+	parser_free(command);
 }

@@ -63,6 +63,9 @@ int main(void)
 
 		/* process input */
 		processLine(line);
+		
+		if(parser_status != PARSER_OK) // ERROR-Messages des Parsers ausgeben
+			printf("%s\n", parser_message);
 
 		sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd);
 
@@ -98,7 +101,7 @@ void processLine(/*const*/ char * line)
 				printf("\nShell beendet.\n\n");
 				return;
 			/*case JOB :
-				break;*/
+				break;*/ //Aufgabe Option Prozesssynchronisation
 			case CD: // change directory
 				if(chdir(command->cd.path) == -1)
 					perror("no such directory");
@@ -107,8 +110,7 @@ void processLine(/*const*/ char * line)
 	           				perror("getcwd() error");
 				}
 				break;
-			case ENV : //TODO: bei "setenv" ohne argument/1 argument läuft nicht hier rein
-				printf("ENV\n");
+			case ENV :
 				if(command->env.value != NULL) // set environment var
 				{
 					if((getenv(command->env.name)) != NULL)
@@ -129,12 +131,15 @@ void processLine(/*const*/ char * line)
 					else
 						printf("Variable does not exist.\n");
 				}
-				else // TODO: läuft gar nicht in diesen pfad
+				else
 					printf("Bad arguments.\n");
 				break;
-			/*case PROG : case PIPE :
+			case PROG : 
+				printf("start programm\n");
+				break;
+			/*case PIPE :
 				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
-				//break;*/
+				//break;*/  //Aufgabe Option Pipes
 			default:
 				printf("command not found\n");
 		}

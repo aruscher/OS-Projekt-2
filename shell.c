@@ -37,7 +37,7 @@ int main(void)
 
 	/* variables to build prompt */
 	char *user;
-	char *host;
+	char hostname[256];
 
 	/* create custom prompt text */
 	prompt = malloc(50);
@@ -51,14 +51,8 @@ int main(void)
            perror("getcwd() error");
 
 	user = getenv("USER");
-	host = getenv("HOSTNAME");
-	if (host==NULL)
-	{	char hostname[256];
-		gethostname(hostname,256);
-		sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd); // TODO: verschwindet
-	}
-	else
-		sprintf(prompt, "%s@%s:~%s$ ", user, host, cwd);
+	gethostname(hostname,256);
+	sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd);
 
 	printf("\nWilkommen!\n");
 
@@ -70,7 +64,7 @@ int main(void)
 		/* process input */
 		processLine(line);
 
-		sprintf(prompt, "%s@%s:~%s$ ", user, host, cwd);
+		sprintf(prompt, "%s@%s:~%s$ ", user, hostname, cwd);
 
 		/* sanity checks for history i.e. actual text in line */
 		if (line && *line) {
@@ -97,7 +91,7 @@ void processLine(/*const*/ char * line)
 	// loop until there is no command left
 	while(command != NULL) 
 	{
-		switch(command->kind) // found the kinds in function parser_free
+		switch(command->kind) // found the kinds in parser.h: enum cmd_kind  
 		{
 			case EXIT: // check if user wants to quit
 				quit = 1;
@@ -114,6 +108,7 @@ void processLine(/*const*/ char * line)
 				}
 				break;
 			case ENV : //TODO: bei "setenv" ohne argument/1 argument läuft nicht hier rein
+				printf("ENV\n");
 				if(command->env.value != NULL) // set environment var
 				{
 					if((getenv(command->env.name)) != NULL)

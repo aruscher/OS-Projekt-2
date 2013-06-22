@@ -1,6 +1,3 @@
-Beenden einer Befehlseingabe durch Und-Zeichen (&)
-⇒ Ausführen des Befehls im Hintergrund
-
 Terminieren von Vordergrundprozessen mit ˆC (Strg + C)
 ⇒ Keinen Einfluss auf Kommandozeile und Hintergrundprozesse
 
@@ -8,7 +5,7 @@ Abfangen von Signalen und Ausgeben entsprechender Nachrichten
 
 I/O Umleitung in Datei
 • Einlesen mittels Kleiner-als-Zeichen (<)
-• Ausgeben mittels Größer-als-Zeichen (>)
+(+)• Ausgeben mittels Größer-als-Zeichen (>)
 
 Escape-Sequenzen mit Backslash (\)
 
@@ -18,6 +15,9 @@ Ausführen von Befehlen mit beliebigen Argumenten
 
 Aussagekräftige Fehlermeldungen z.B. bei Syntaxfehlern
 
+
+(-)		Beenden einer Befehlseingabe durch Und-Zeichen (&)
+		⇒ Ausführen des Befehls im Hintergrund
 
 
 Ready:

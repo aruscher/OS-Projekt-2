@@ -135,7 +135,65 @@ void processLine(/*const*/ char * line)
 					printf("Bad arguments.\n");
 				break;
 			case PROG : 
-				printf("start programm\n");
+				if(command->prog.output) //CMD > file
+				{	
+					FILE *file;
+					file=fopen((command->prog.output),"w");	// Datei neu/überschreiben
+					if(file)
+					{	
+						char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
+						int i;
+						for(i = 1; i < command->prog.argc; i++) // rest anhängen
+						{
+						   strcat(fileCmd, " ");
+						   strcat(fileCmd, command->prog.argv[i]);
+						}
+						//read unix pipe.
+						FILE *pipe = popen(fileCmd,"r");
+						if(pipe)
+						{
+							/*while((fscanf(pipe,"%500s",line)) != EOF)
+								fprintf(file,"%s\n",line);*/
+							while(fgets(line, sizeof(line), pipe))
+								fprintf(file,"%s",line);
+							pclose(pipe);
+							printf("Wrote to file.\n");
+						}
+						else
+						   perror("Couldn't execute command.");
+
+						fclose(file);
+					}
+					else
+					{
+						perror("Couldn't write to file\n");
+					}
+				}
+				else if(command->prog.input) //CMD < file
+				{	printf("input\n");				
+					//execl(cwd, line, (char *) 0);
+				}
+				else if(command->prog.background)
+				{	
+					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
+					int i;
+					for(i = 1; i < command->prog.argc; i++) // rest anhängen
+					{
+					   strcat(fileCmd, " ");
+					   strcat(fileCmd, command->prog.argv[i]);
+					}
+					printf("%s\n",fileCmd);
+					//read unix pipe.
+					FILE *pipe = popen(fileCmd,"r");
+					if(pipe)
+					{	printf("Execute in background ok.\n");
+						pclose(pipe);
+					}
+					else
+						perror("Couldn't execute command in background\n");
+				}
+				else
+					("Couldn't identify program.\n");
 				break;
 			/*case PIPE :
 				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output

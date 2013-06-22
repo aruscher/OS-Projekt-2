@@ -1,0 +1,42 @@
+Beenden einer Befehlseingabe durch Und-Zeichen (&)
+⇒ Ausführen des Befehls im Hintergrund
+
+Terminieren von Vordergrundprozessen mit ˆC (Strg + C)
+⇒ Keinen Einfluss auf Kommandozeile und Hintergrundprozesse
+
+Abfangen von Signalen und Ausgeben entsprechender Nachrichten
+
+I/O Umleitung in Datei
+• Einlesen mittels Kleiner-als-Zeichen (<)
+• Ausgeben mittels Größer-als-Zeichen (>)
+
+Escape-Sequenzen mit Backslash (\)
+
+Option A: Pipes / Option B Jobs
+
+Ausführen von Befehlen mit beliebigen Argumenten
+
+Aussagekräftige Fehlermeldungen z.B. bei Syntaxfehlern
+
+
+
+Ready:
+
+(+)	Eingabeaufforderung mit Eingabebearbeitung und Befehlshistorie
+
+(+)	Trennen von sequenziellen Befehlen durch Semikolon (;)
+
+(+)	Ausführen von Befehlen standardmäßig im Vordergrund
+
+(+)	Freitext mit einfachen Anführungszeichen (’)
+
+(+)	Kommentarzeilen durch Hash-Zeichen (#)
+
+(+)	Befehle der Kommandozeile
+	• exit → Beenden der Konsole
+	• cd Pfad → Ändern des Arbeitsverzeichnisses
+
+(+)	Umgebungsvariablen
+	• Setzen einer Variablen → setenv Variable Wert
+	• Löschen einer Variablen → unsetenv Variable
+	• Ersetzen mit Variablenwert → $Variable oder ${Variable}

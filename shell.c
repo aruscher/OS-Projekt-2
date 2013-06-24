@@ -40,8 +40,8 @@ int main(void)
 	char hostname[256];
 
 	/* create custom prompt text */
-	prompt = malloc(50);
-	memset(prompt, 0, 50); //??
+	prompt = malloc(1024);
+	memset(prompt, 0, 1024); //??
 
 	//TODO: immer für prompt GETENV nutzen??
 

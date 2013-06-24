@@ -1,7 +1,5 @@
 install: shell
 
-shell: dfs
-
-dfs: dfs.c
-	gcc -o dfs dfs.c
+shell: shell.c
+	gcc shell.c parser.c -g -o shell -lreadline -lncurses
 

@@ -14,7 +14,7 @@
  * shell project by Christian Delfs, Andreas Ruscheinski, Fabienne Lambusch
  *
  * to execute install readline & ncurses libraries
- * and compile with "gcc shell.c parser.c -o shell -lreadline -lncurses"
+ * and compile with makefile or "gcc shell.c parser.c -o shell -lreadline -lncurses"
  */
 
 #include <stdlib.h>
@@ -53,7 +53,7 @@ void signal_handler(int signal)
 			printf("Fehler: Die Verbindung wurde beendet.\r\n");
 			break;
 
-		case SIGINT:
+		case SIGINT: // TODO: Gestartetes Programm in der Shell beenden?
 			/* ignore because this shell shouldn't be interrupted */
 			/* children will be interruptable */
 			break;
@@ -67,7 +67,7 @@ void signal_handler(int signal)
 			break;
 
 		case SIGTRAP:
-			printf("Hinweis: Überwachungs oder Stoppunkt erreicht.\r\n");
+			printf("Hinweis: Überwachungs- oder Stoppunkt erreicht.\r\n");
 			return;
 
 		case SIGABRT:
@@ -95,7 +95,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGSEGV:
-			printf("Fehler: Ungueltige Speicherreferenz.");
+			printf("Fehler: Ungültige Speicherreferenz.");
 			break;
 
 		case SIGUSR2:
@@ -183,12 +183,12 @@ void signal_handler(int signal)
 void setup_signal_handler(int signal, void (*handler)(int))
 {
 	struct sigaction sa;
-		/* The sigemptyset() function initialises the signal set pointed to by set. */
+	/* The sigemptyset() function initialises the signal set pointed to by set. */
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = 0;
 	sa.sa_handler = handler;
 
-		/* The sigaction() system call is used to change the action taken by a process on receipt of a specific signal. */
+	/* sigaction() is used to change the action taken by a process on receipt of a specific signal. */
 	if (sigaction(signal, &sa, NULL) == -1) {
 		perror("installing signal handler failed");
 		exit(EXIT_FAILURE);
@@ -234,10 +234,8 @@ int main(void)
 	prompt = malloc(1024);
 	memset(prompt, 0, 1024); //??
 
-	//TODO: immer für prompt GETENV nutzen??
-
 	/* setting user variables for prompt */
-	// TODO: im home oder aktuellen verzeichnis starten?
+	// TODO: nur Teil des Pfades?
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
            perror("getcwd() error");
 
@@ -286,7 +284,7 @@ void processLine(/*const*/ char * line)
 	while(command != NULL) 
 	{
 		switch(command->kind) // found the kinds in parser.h: enum cmd_kind  
-		{
+		{printf("\nswitch\n\n");
 			case EXIT: // check if user wants to quit
 				quit = 1;
 				printf("\nShell beendet.\n\n");
@@ -308,7 +306,6 @@ void processLine(/*const*/ char * line)
 						printf("Variable already exists\n");
 					else
 					{	setenv(command->env.name, command->env.value, 0); 
-								// 0==NoOverwrite?
 						printf("Variable set.\n");
 					}
 				}

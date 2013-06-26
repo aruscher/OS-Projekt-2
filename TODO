@@ -16,9 +16,6 @@ Ausführen von Befehlen mit beliebigen Argumenten
 Aussagekräftige Fehlermeldungen z.B. bei Syntaxfehlern
 
 
-(-)		Beenden einer Befehlseingabe durch Und-Zeichen (&)
-		⇒ Ausführen des Befehls im Hintergrund
-
 
 Ready:
 
@@ -40,3 +37,6 @@ Ready:
 	• Setzen einer Variablen → setenv Variable Wert
 	• Löschen einer Variablen → unsetenv Variable
 	• Ersetzen mit Variablenwert → $Variable oder ${Variable}
+
+(-)		Beenden einer Befehlseingabe durch Und-Zeichen (&)
+		⇒ Ausführen des Befehls im Hintergrund

@@ -54,6 +54,7 @@ void signal_handler(int signal)
 			break;
 
 		case SIGINT: // TODO: Gestartetes Programm in der Shell beenden?
+			printf("^C\n");
 			/* ignore because this shell shouldn't be interrupted */
 			/* children will be interruptable */
 			break;
@@ -95,7 +96,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGSEGV:
-			printf("Fehler: Ungültige Speicherreferenz.");
+			printf("Fehler: Ungültige Speicherreferenz.\n");
 			break;
 
 		case SIGUSR2:
@@ -103,7 +104,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGPIPE:
-			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.");
+			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.\n");
 			return;
 
 		case SIGALRM:
@@ -220,9 +221,9 @@ void setup_remaining_signal_handlers(void)
 /* everything starts here */
 int main(void) 
 {
-    /* ignore SIGINT */
-    setup_signal_handler(SIGINT, SIG_IGN);
-    setup_remaining_signal_handlers();
+	/* ignore SIGINT */
+	setup_signal_handler(SIGINT, SIG_IGN);
+	setup_remaining_signal_handlers();
 
 	char * line;
 
@@ -273,9 +274,10 @@ int main(void)
 }
 
 /* process input stored in line i.e. print line */
-void processLine(/*const*/ char * line) 
+void processLine(char * line) 
 {
 	command = parser_parse(line);
+	//parser_print(command);
 
 	/* print length and content of line */
 	//printf("%zd - %s\n", strlen(line), line);
@@ -284,13 +286,14 @@ void processLine(/*const*/ char * line)
 	while(command != NULL) 
 	{
 		switch(command->kind) // found the kinds in parser.h: enum cmd_kind  
-		{printf("\nswitch\n\n");
+		{
 			case EXIT: // check if user wants to quit
 				quit = 1;
 				printf("\nShell beendet.\n\n");
 				return;
-			/*case JOB :
-				break;*/ //Aufgabe Option Prozesssynchronisation
+			case JOB :
+				printf("This is a job.\n");
+				break; //Aufgabe Option Prozesssynchronisation
 			case CD: // change directory
 				if(chdir(command->cd.path) == -1)
 					perror("no such directory");
@@ -381,11 +384,12 @@ void processLine(/*const*/ char * line)
 						perror("Couldn't execute command in background\n");
 				}
 				else
-					("Couldn't identify program.\n");
+					printf("Couldn't identify program.\n");
 				break;
-			/*case PIPE :
+			case PIPE :
+				printf("This is a pipe.\n");
 				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
-				//break;*/  //Aufgabe Option Pipes
+				break; //Aufgabe Option Pipes
 			default:
 				printf("command not found\n");
 		}

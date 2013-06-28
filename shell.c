@@ -79,7 +79,7 @@ void signal_handler(int signal)
 			break;
 
 		case SIGCHLD:
-			printf("Hinweis: Der Status eines Kind-Prozess hat sich geändert.\r\n" );
+			//printf("Hinweis: Der Status eines Kind-Prozess hat sich geändert.\r\n" );
 			return;
 
 		case SIGFPE:
@@ -97,6 +97,7 @@ void signal_handler(int signal)
 		case SIGSEGV:
 			printf("Fehler: Ungültige Speicherreferenz.");
 			break;
+            //return;
 
 		case SIGUSR2:
 			printf("Hinweis: Benutzerdefiniertes Signal 2 erhalten.\r\n");
@@ -246,7 +247,7 @@ int main(void)
 	printf("\nWilkommen!\n");
 
 	/* continue until user signals exit i.e. writes 'quit' */
-	for (; !quit;) {
+	while(!quit) {
 		/* input cursor with prompt */
 		line = readline(prompt);
 
@@ -354,7 +355,7 @@ void processLine(/*const*/ char * line)
 					}
 					else
 					{
-						perror("Couldn't write to file\n");
+						perror("Couldn't write to file");
 					}
 				}
 				else if(command->prog.input) //CMD < file
@@ -378,14 +379,48 @@ void processLine(/*const*/ char * line)
 						pclose(pipe);
 					}
 					else
-						perror("Couldn't execute command in background\n");
+						perror("Couldn't execute command in background");
 				}
-				else
-					("Couldn't identify program.\n");
+				else {
+
+                    //try system command
+                    char exe[256];
+                    char *input = command->prog.argv[0]; //sys prog
+                    sprintf(exe,"/bin/%s",input); //build exe path
+                    //printf("EXE:%s\n",exe);
+                    char *arguments[256];
+                    int i;
+                    int status;
+                    pid_t pid;
+                    for(i = 0; i < command->prog.argc; i++) // collect args
+					{
+					   arguments[i]=command->prog.argv[i];
+					}
+                    arguments[i+1]=NULL;
+
+                    switch (pid=fork()){
+                        //fork for returning to parent process
+                        case -1: perror("fork");
+                        case 0: {
+                            //child process
+                            execv(exe,arguments);
+                            exit(742);
+                        }
+                        default: {
+                            //parent waits for exit in child
+                            wait(&status);
+                            break;
+                        }
+                    }
 				break;
-			/*case PIPE :
+            }
+			case PIPE :
 				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
 				//break;*/  //Aufgabe Option Pipes
+                printf("Input: %s",command->prog.input);
+                printf("Output: %s",command->prog.output);
+                
+                break;
 			default:
 				printf("command not found\n");
 		}

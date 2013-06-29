@@ -381,58 +381,58 @@ void processLine(/*const*/ char * line)
 					else
 						perror("Couldn't execute command in background");
 				}
-				else {
-
-                    //try system command
-                    char exe1[256];
-                    //char exe2[256];
-                    char *input = command->prog.argv[0]; //sys prog
-                    sprintf(exe1,"/usr/bin/%s",input); //alternative part
-                    //printf("EXE:%s\n",exe1);
-                    char *arguments[256];
-                    int i;
-                    int error;
-                    int status;
-                    pid_t pid;
-                    for(i = 0; i < command->prog.argc; i++) // collect args
+				else 
+				{
+					//try system command
+					char exe1[256];
+					//char exe2[256];
+					char *input = command->prog.argv[0]; //sys prog
+					sprintf(exe1,"/usr/bin/%s",input); //alternative part
+					//printf("EXE:%s\n",exe1);
+					char *arguments[256];
+					int i;
+					int error;
+					int status;
+					pid_t pid;
+					for(i = 0; i < command->prog.argc; i++) // collect args
 					{
-					   arguments[i]=command->prog.argv[i];
+						arguments[i]=command->prog.argv[i];
 					}
-                    //special case ls without arguments -> show current dir
-                    if(strcmp(input,"ls")==0 && command->prog.argc == 1){
-                        arguments[0] = "ls";
-                        arguments[1] = ".";
-                        arguments[2] = NULL;
-                    }
-                    //printf("After Argu\n");
-                    arguments[i+1]=NULL;
-                    switch (pid=fork()){
-                        //fork for returning to parent process
-                        case -1: perror("fork");
-                        case 0: {
-                            error = execv(exe1,arguments);
-                            if(error==-1){
-                                printf("Cant find Programm\n");
-                            }
-                            exit(742);
-                        }
-                        default: {
-                            //parent waits for exit in child
-                            wait(&status);
-                            break;
-                        }
-                    }
+					//special case ls without arguments -> show current dir
+					if(strcmp(input,"ls")==0 && command->prog.argc == 1)
+					{
+						arguments[0] = "ls";
+						arguments[1] = ".";
+						arguments[2] = NULL;
+					}
+					//printf("After Argu\n");
+					arguments[i+1]=NULL;
+					switch (pid=fork()) //fork for returning to parent process
+					{
+						case -1: perror("fork");
+						case 0: 
+						{
+ 							error = execv(exe1,arguments);
+							if(error==-1)
+								printf("Can't find programm.\n");
+							exit(742);
+						}
+						default: //parent waits for exit in child
+						{
+							wait(&status);
+							break;
+						}
+					}
+				}
 				break;
-            }
 			case PIPE :
-				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
+				{//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
 				//break;*/  //Aufgabe Option Pipes
-                printf("Input: %s\n",command->prog.input);
-                printf("Output: %s\n",command->prog.output);
-                
-                break;
+				printf("Input: %s\n",command->prog.input);
+				printf("Output: %s\n",command->prog.output);
+				break;}
 			default:
-				printf("command not found\n");
+				printf("Command not found\n");
 		}
 		// get next command
 		command = command->next;

@@ -79,10 +79,10 @@ int systemProg(cmds* command){
 					if(error!=-1) {
 							exit(666);
 						}
-					printf("Exe2:%s",exe2);
+					//printf("Exe2:%s\n",exe2);
 					error = execv(exe2,arguments);
 					if(error==-1){
-							printf("Cant find programm");
+							printf("Can't find programm\n");
 						}
 					exit(742);
 				}
@@ -146,7 +146,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGSEGV:
-			printf("Fehler: Ungültige Speicherreferenz.");
+			printf("Fehler: Ungültige Speicherreferenz.\n");
 			break;
             //return;
 
@@ -155,7 +155,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGPIPE:
-			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.");
+			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.\n");
 			return;
 
 		case SIGALRM:
@@ -243,7 +243,7 @@ void setup_signal_handler(int signal, void (*handler)(int))
 	/* sigaction() is used to change the action taken by a process on receipt of a specific signal. */
 	if (sigaction(signal, &sa, NULL) == -1) {
 		perror("installing signal handler failed");
-		exit(EXIT_FAILURE);
+		exit(EXIT_FAILURE); //TODO: Kein Abbruch unserer Shell UND prompt setzen bei allen signalen!
 	}
 }
 
@@ -375,9 +375,9 @@ void processLine(/*const*/ char * line)
 					printf("Bad arguments.\n");
 				break;
 			case PROG : 
-				if(command->prog.output) //CMD > file
+				if(command->prog.output) //Command > file
 				{	
-					FILE *file;
+					FILE *file; //TODO: reihenfolge: 1. command prüfen, dann datei write
 					file=fopen((command->prog.output),"w");	// Datei neu/überschreiben
 					if(file)
 					{	
@@ -409,12 +409,26 @@ void processLine(/*const*/ char * line)
 						perror("Couldn't write to file");
 					}
 				}
-				else if(command->prog.input) //CMD < file
-				{	printf("input\n");				
-					//execl(cwd, line, (char *) 0);
+				else if(command->prog.input) //Command < file
+				{
+					FILE *file;
+					file =  fopen(command->prog.input,"r");
+
+ 					if(!file)
+					{	perror("Wrong file input"); break; }
+ 					
+					int i = 0; char line[1024];
+					while(fgets(line, sizeof line, file) != NULL) /* read a line */
+					{	i++; 
+						command->prog.argv[i] = line;
+					}
+					fclose(file); 
+					command->prog.argc = i+1;
+
+					systemProg(command);
 				}
 				else if(command->prog.background)
-				{	
+				{
 					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
 					int i;
 					for(i = 1; i < command->prog.argc; i++) // rest anhängen

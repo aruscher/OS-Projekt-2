@@ -54,7 +54,6 @@ void signal_handler(int signal)
 			break;
 
 		case SIGINT: // TODO: Gestartetes Programm in der Shell beenden?
-			printf("^C\n");
 			/* ignore because this shell shouldn't be interrupted */
 			/* children will be interruptable */
 			break;
@@ -80,7 +79,7 @@ void signal_handler(int signal)
 			break;
 
 		case SIGCHLD:
-			printf("Hinweis: Der Status eines Kind-Prozess hat sich geändert.\r\n" );
+			//printf("Hinweis: Der Status eines Kind-Prozess hat sich geändert.\r\n" );
 			return;
 
 		case SIGFPE:
@@ -96,15 +95,16 @@ void signal_handler(int signal)
 			return;
 
 		case SIGSEGV:
-			printf("Fehler: Ungültige Speicherreferenz.\n");
+			printf("Fehler: Ungültige Speicherreferenz.");
 			break;
+            //return;
 
 		case SIGUSR2:
 			printf("Hinweis: Benutzerdefiniertes Signal 2 erhalten.\r\n");
 			return;
 
 		case SIGPIPE:
-			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.\n");
+			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.");
 			return;
 
 		case SIGALRM:
@@ -221,9 +221,9 @@ void setup_remaining_signal_handlers(void)
 /* everything starts here */
 int main(void) 
 {
-	/* ignore SIGINT */
-	setup_signal_handler(SIGINT, SIG_IGN);
-	setup_remaining_signal_handlers();
+    /* ignore SIGINT */
+    setup_signal_handler(SIGINT, SIG_IGN);
+    setup_remaining_signal_handlers();
 
 	char * line;
 
@@ -247,7 +247,7 @@ int main(void)
 	printf("\nWilkommen!\n");
 
 	/* continue until user signals exit i.e. writes 'quit' */
-	for (; !quit;) {
+	while(!quit) {
 		/* input cursor with prompt */
 		line = readline(prompt);
 
@@ -274,10 +274,9 @@ int main(void)
 }
 
 /* process input stored in line i.e. print line */
-void processLine(char * line) 
+void processLine(/*const*/ char * line) 
 {
 	command = parser_parse(line);
-	//parser_print(command);
 
 	/* print length and content of line */
 	//printf("%zd - %s\n", strlen(line), line);
@@ -286,14 +285,13 @@ void processLine(char * line)
 	while(command != NULL) 
 	{
 		switch(command->kind) // found the kinds in parser.h: enum cmd_kind  
-		{
+		{printf("\nswitch\n\n");
 			case EXIT: // check if user wants to quit
 				quit = 1;
 				printf("\nShell beendet.\n\n");
 				return;
-			case JOB :
-				printf("This is a job.\n");
-				break; //Aufgabe Option Prozesssynchronisation
+			/*case JOB :
+				break;*/ //Aufgabe Option Prozesssynchronisation
 			case CD: // change directory
 				if(chdir(command->cd.path) == -1)
 					perror("no such directory");
@@ -357,7 +355,7 @@ void processLine(char * line)
 					}
 					else
 					{
-						perror("Couldn't write to file\n");
+						perror("Couldn't write to file");
 					}
 				}
 				else if(command->prog.input) //CMD < file
@@ -381,15 +379,58 @@ void processLine(char * line)
 						pclose(pipe);
 					}
 					else
-						perror("Couldn't execute command in background\n");
+						perror("Couldn't execute command in background");
 				}
-				else
-					printf("Couldn't identify program.\n");
+				else {
+
+                    //try system command
+                    char exe1[256];
+                    //char exe2[256];
+                    char *input = command->prog.argv[0]; //sys prog
+                    sprintf(exe1,"/usr/bin/%s",input); //alternative part
+                    //printf("EXE:%s\n",exe1);
+                    char *arguments[256];
+                    int i;
+                    int error;
+                    int status;
+                    pid_t pid;
+                    for(i = 0; i < command->prog.argc; i++) // collect args
+					{
+					   arguments[i]=command->prog.argv[i];
+					}
+                    //special case ls without arguments -> show current dir
+                    if(strcmp(input,"ls")==0 && command->prog.argc == 1){
+                        arguments[0] = "ls";
+                        arguments[1] = ".";
+                        arguments[2] = NULL;
+                    }
+                    //printf("After Argu\n");
+                    arguments[i+1]=NULL;
+                    switch (pid=fork()){
+                        //fork for returning to parent process
+                        case -1: perror("fork");
+                        case 0: {
+                            error = execv(exe1,arguments);
+                            if(error==-1){
+                                printf("Cant find Programm\n");
+                            }
+                            exit(742);
+                        }
+                        default: {
+                            //parent waits for exit in child
+                            wait(&status);
+                            break;
+                        }
+                    }
 				break;
+            }
 			case PIPE :
-				printf("This is a pipe.\n");
 				//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
-				break; //Aufgabe Option Pipes
+				//break;*/  //Aufgabe Option Pipes
+                printf("Input: %s\n",command->prog.input);
+                printf("Output: %s\n",command->prog.output);
+                
+                break;
 			default:
 				printf("command not found\n");
 		}

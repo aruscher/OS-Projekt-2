@@ -44,6 +44,57 @@ static char * prompt = NULL;
 /* switch case with a printout of the message */
 /* lecture 3 -> Page 10: "Signale" */
 /* http://openbook.galileocomputing.de/shell_programmierung/shell_009_000.htm */
+
+int systemProg(cmds* command){
+	char exe1[256];
+	char exe2[256];
+	char *input = command->prog.argv[0]; //sys prog
+	sprintf(exe1,"/usr/bin/%s",input); //alternative part
+	sprintf(exe2,"/bin/%s",input);
+	//printf("EXE:%s\n",exe1);
+	char *arguments[256];
+	int i;
+	int error;
+	int status;
+	pid_t pid;
+	for(i = 0; i < command->prog.argc; i++) // collect args
+		{
+			arguments[i]=command->prog.argv[i];
+		}
+	//special case ls without arguments -> show current dir
+	if(strcmp(input,"ls")==0 && command->prog.argc == 1)
+		{
+			arguments[0] = "ls";
+			arguments[1] = ".";
+			arguments[2] = NULL;
+		}
+	//printf("After Argu\n");
+	arguments[i+1]=NULL;
+	switch (pid=fork()) //fork for returning to parent process
+		{
+			case -1: perror("fork");
+			case 0: 
+				{
+ 					error = execv(exe1,arguments);
+					if(error!=-1) {
+							exit(666);
+						}
+					printf("Exe2:%s",exe2);
+					error = execv(exe2,arguments);
+					if(error==-1){
+							printf("Cant find programm");
+						}
+					exit(742);
+				}
+			default: //parent waits for exit in child
+				{
+					wait(&status);
+					break;
+					}
+		}
+}
+
+
 void signal_handler(int signal)  
 {
 
@@ -384,51 +435,7 @@ void processLine(/*const*/ char * line)
 				else 
 				{
 					//try system command
-					char exe1[256];
-					char exe2[256];
-					char *input = command->prog.argv[0]; //sys prog
-					sprintf(exe1,"/usr/bin/%s",input); //alternative part
-					sprintf(exe2,"/bin/%s",input);
-					//printf("EXE:%s\n",exe1);
-					char *arguments[256];
-					int i;
-					int error;
-					int status;
-					pid_t pid;
-					for(i = 0; i < command->prog.argc; i++) // collect args
-					{
-						arguments[i]=command->prog.argv[i];
-					}
-					//special case ls without arguments -> show current dir
-					if(strcmp(input,"ls")==0 && command->prog.argc == 1)
-					{
-						arguments[0] = "ls";
-						arguments[1] = ".";
-						arguments[2] = NULL;
-					}
-					//printf("After Argu\n");
-					arguments[i+1]=NULL;
-					switch (pid=fork()) //fork for returning to parent process
-					{
-						case -1: perror("fork");
-						case 0: 
-						{
- 							error = execv(exe1,arguments);
-							if(error!=-1) {
-								exit(666);
-							}
-							error = execv(exe2,arguments);
-							if(error==-1){
-								printf("Cant find programm");
-							}
-							exit(742);
-						}
-						default: //parent waits for exit in child
-						{
-							wait(&status);
-							break;
-						}
-					}
+					systemProg(command);
 				}
 				break;
 			case PIPE :

@@ -385,9 +385,10 @@ void processLine(/*const*/ char * line)
 				{
 					//try system command
 					char exe1[256];
-					//char exe2[256];
+					char exe2[256];
 					char *input = command->prog.argv[0]; //sys prog
 					sprintf(exe1,"/usr/bin/%s",input); //alternative part
+					sprintf(exe2,"/bin/%s",input);
 					//printf("EXE:%s\n",exe1);
 					char *arguments[256];
 					int i;
@@ -413,8 +414,13 @@ void processLine(/*const*/ char * line)
 						case 0: 
 						{
  							error = execv(exe1,arguments);
-							if(error==-1)
-								printf("Can't find programm.\n");
+							if(error!=-1) {
+								exit(666);
+							}
+							error = execv(exe2,arguments);
+							if(error==-1){
+								printf("Cant find programm");
+							}
 							exit(742);
 						}
 						default: //parent waits for exit in child

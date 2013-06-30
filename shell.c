@@ -59,7 +59,7 @@ int systemProg(cmds* command){
 	pid_t pid;
 	for(i = 0; i < command->prog.argc; i++) // collect args
 		{
-			arguments[i]=command->prog.argv[i];
+			arguments[i]=command->prog.argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
 		}
 	//special case ls without arguments -> show current dir
 	if(strcmp(input,"ls")==0 && command->prog.argc == 1)
@@ -104,9 +104,9 @@ void signal_handler(int signal)
 			printf("Fehler: Die Verbindung wurde beendet.\r\n");
 			break;
 
-		case SIGINT: // TODO: Gestartetes Programm in der Shell beenden?
+		case SIGINT:
 			/* ignore because this shell shouldn't be interrupted */
-			/* children will be interruptable */
+			printf("^C\n");
 			break;
 
 		case SIGQUIT:
@@ -130,7 +130,7 @@ void signal_handler(int signal)
 			break;
 
 		case SIGCHLD:
-			//printf("Hinweis: Der Status eines Kind-Prozess hat sich geändert.\r\n" );
+			//printf("Hinweis: Der Status eines Kind-Prozesses hat sich geändert.\r\n" );
 			return;
 
 		case SIGFPE:
@@ -148,7 +148,6 @@ void signal_handler(int signal)
 		case SIGSEGV:
 			printf("Fehler: Ungültige Speicherreferenz.\n");
 			break;
-            //return;
 
 		case SIGUSR2:
 			printf("Hinweis: Benutzerdefiniertes Signal 2 erhalten.\r\n");
@@ -243,7 +242,7 @@ void setup_signal_handler(int signal, void (*handler)(int))
 	/* sigaction() is used to change the action taken by a process on receipt of a specific signal. */
 	if (sigaction(signal, &sa, NULL) == -1) {
 		perror("installing signal handler failed");
-		exit(EXIT_FAILURE); //TODO: Kein Abbruch unserer Shell UND prompt setzen bei allen signalen!
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -375,6 +374,8 @@ void processLine(/*const*/ char * line)
 					printf("Bad arguments.\n");
 				break;
 			case PROG : 
+				if(!(command->prog.background))
+					setup_signal_handler(SIGINT, SIG_DFL); //interrupt default
 				if(command->prog.output) //Command > file
 				{	
 					FILE *file; //TODO: reihenfolge: 1. command prüfen, dann datei write
@@ -419,12 +420,12 @@ void processLine(/*const*/ char * line)
  					
 					int i = 0; char line[1024];
 					while(fgets(line, sizeof line, file) != NULL) /* read a line */
-					{	i++; 
+					{	if(i == 1){command->prog.argv[1] = NULL;break;}
+						i++;				
 						command->prog.argv[i] = line;
 					}
 					fclose(file); 
-					command->prog.argc = i+1;
-
+					if(command->prog.argc > 1){command->prog.argc = 1;}
 					systemProg(command);
 				}
 				else if(command->prog.background)

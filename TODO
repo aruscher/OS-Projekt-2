@@ -1,13 +1,10 @@
 Terminieren von Vordergrundprozessen mit ˆC (Strg + C)
 ⇒ Keinen Einfluss auf Kommandozeile und Hintergrundprozesse
+		- 1. SIGINT ignorieren, 2. bei Vordergrundprozessen wieder abfangen, funktioniert aber nicht, siehe Programmcode:
+				if(!(command->prog.background))
+					setup_signal_handler(SIGINT, SIG_DFL); //interrupt default
 
 Abfangen von Signalen und Ausgeben entsprechender Nachrichten
-
-I/O Umleitung in Datei
-• Einlesen mittels Kleiner-als-Zeichen (<)
-(+)• Ausgeben mittels Größer-als-Zeichen (>)
-
-Escape-Sequenzen mit Backslash (\)
 
 Option A: Pipes / Option B Jobs
 
@@ -38,5 +35,11 @@ Ready:
 	• Löschen einer Variablen → unsetenv Variable
 	• Ersetzen mit Variablenwert → $Variable oder ${Variable}
 
-(-)		Beenden einer Befehlseingabe durch Und-Zeichen (&)
-		⇒ Ausführen des Befehls im Hintergrund
+(?)- scheint inbegriffen:	Escape-Sequenzen mit Backslash (\)
+
+(-)-popen "unschön"		Beenden einer Befehlseingabe durch Und-Zeichen (&)
+							⇒ Ausführen des Befehls im Hintergrund
+
+(-)								I/O Umleitung in Datei
+	-nur einzeilig				• Einlesen mittels Kleiner-als-Zeichen (<)
+	-popen "unschön"			• Ausgeben mittels Größer-als-Zeichen (>)

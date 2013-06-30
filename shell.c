@@ -393,8 +393,8 @@ void processLine(/*const*/ char * line)
 						FILE *pipe = popen(fileCmd,"r");
 						if(pipe)
 						{
-							/*while((fscanf(pipe,"%500s",line)) != EOF)
-								fprintf(file,"%s\n",line);*/
+							//while((fscanf(pipe,"%500s",line)) != EOF)
+								//fprintf(file,"%s\n",line);
 							while(fgets(line, sizeof(line), pipe))
 								fprintf(file,"%s",line);
 							pclose(pipe);

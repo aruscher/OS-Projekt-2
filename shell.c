@@ -27,7 +27,6 @@
 
 #include "parser.h"
 
-//struct cmds* command; //TODO: struct/static??
 static cmds* command;
 
 char cwd[1024];
@@ -286,7 +285,6 @@ int main(void)
 	memset(prompt, 0, 1024); //??
 
 	/* setting user variables for prompt */
-	// TODO: nur Teil des Pfades?
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
            perror("getcwd() error");
 
@@ -410,7 +408,7 @@ void processLine(/*const*/ char * line)
 						perror("Couldn't write to file");
 					}
 				}
-				else if(command->prog.input) //Command < file
+				else if(command->prog.input) //Command < file //TODO: something wrong here
 				{
 					FILE *file;
 					file =  fopen(command->prog.input,"r");
@@ -437,7 +435,6 @@ void processLine(/*const*/ char * line)
 					   strcat(fileCmd, " ");
 					   strcat(fileCmd, command->prog.argv[i]);
 					}
-					printf("%s\n",fileCmd);
 					//read unix pipe.
 					FILE *pipe = popen(fileCmd,"r");
 					if(pipe)

@@ -79,7 +79,6 @@ int systemProg(cmds* command){
 					if(error!=-1) {
 							exit(666);
 						}
-					printf("Exe2:%s",exe2);
 					error = execv(exe2,arguments);
 					if(error==-1){
 							printf("Cant find programm");

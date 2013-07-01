@@ -1,11 +1,12 @@
 Terminieren von Vordergrundprozessen mit ˆC (Strg + C)
 ⇒ Keinen Einfluss auf Kommandozeile und Hintergrundprozesse
-		- 1. SIGINT ignorieren, 2. bei Vordergrundprozessen wieder abfangen, funktioniert aber nicht, siehe Programmcode:
+		- 1. SIGINT wird nur bei vordergrundprozessen beachtet, aber shell wird beendet. Programmcode:
 				if(!(command->prog.background))
 					setup_signal_handler(SIGINT, SIG_DFL); //interrupt default
 
 Abfangen von Signalen und Ausgeben entsprechender Nachrichten
 
+Probem? eingabe ls -l  und danach echo -> "-l" außerdem läuft bei systemProg immer in case 0 UND default
 Option A: Pipes / Option B Jobs
 
 Ausführen von Befehlen mit beliebigen Argumenten

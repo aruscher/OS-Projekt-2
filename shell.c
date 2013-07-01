@@ -27,7 +27,6 @@
 
 #include "parser.h"
 
-//struct cmds* command; //TODO: struct/static??
 static cmds* command;
 
 char cwd[1024];
@@ -45,69 +44,19 @@ static char * prompt = NULL;
 /* lecture 3 -> Page 10: "Signale" */
 /* http://openbook.galileocomputing.de/shell_programmierung/shell_009_000.htm */
 
-int systemProg(cmds* command){
-	char exe1[256];
-	char exe2[256];
-	char *input = command->prog.argv[0]; //sys prog
-	sprintf(exe1,"/usr/bin/%s",input); //alternative part
-	sprintf(exe2,"/bin/%s",input);
-	//printf("EXE:%s\n",exe1);
-	char *arguments[256];
-	int i;
-	int error;
-	int status;
-	pid_t pid;
-	for(i = 0; i < command->prog.argc; i++) // collect args
-		{
-			arguments[i]=command->prog.argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
-		}
-	//special case ls without arguments -> show current dir
-	if(strcmp(input,"ls")==0 && command->prog.argc == 1)
-		{
-			arguments[0] = "ls";
-			arguments[1] = ".";
-			arguments[2] = NULL;
-		}
-	//printf("After Argu\n");
-	arguments[i+1]=NULL;
-	switch (pid=fork()) //fork for returning to parent process
-		{
-			case -1: perror("fork");
-			case 0: 
-				{
- 					error = execv(exe1,arguments);
-					if(error!=-1) {
-							exit(666);
-						}
-					//printf("Exe2:%s\n",exe2);
-					error = execv(exe2,arguments);
-					if(error==-1){
-							printf("Can't find programm\n");
-						}
-					exit(742);
-				}
-			default: //parent waits for exit in child
-				{
-					wait(&status);
-					break;
-					}
-		}
-}
-
-
 void signal_handler(int signal)  
 {
 
 	switch( signal )
-	{
+	{//TODO: break durch return ersetzen bzw. exit(..) entfernen?
 		case SIGHUP:
 			printf("Fehler: Die Verbindung wurde beendet.\r\n");
 			break;
 
 		case SIGINT:
-			/* ignore because this shell shouldn't be interrupted */
+			// ignore because this shell shouldn't be interrupted
 			printf("^C\n");
-			break;
+			return;
 
 		case SIGQUIT:
 			printf("Hinweis: Quit-Signal erhalten. Shell wird beendet.\r\n");
@@ -268,6 +217,57 @@ void setup_remaining_signal_handlers(void)
 }
 
 
+int systemProg(cmds* command){
+	char exe1[256];
+	char exe2[256];
+	char *input = command->prog.argv[0]; //sys prog
+	sprintf(exe1,"/usr/bin/%s",input); //alternative part
+	sprintf(exe2,"/bin/%s",input);
+	//printf("EXE:%s\n",exe1);
+	char *arguments[256];
+	int i;
+	int error;
+	int status;
+	pid_t pid;
+	for(i = 0; i < command->prog.argc; i++) // collect args
+		{
+			arguments[i]=command->prog.argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
+		}
+	//special case ls without arguments -> show current dir
+	if(strcmp(input,"ls")==0 && command->prog.argc == 1)
+		{
+			arguments[0] = "ls";
+			arguments[1] = ".";
+			arguments[2] = NULL;
+		}
+	//printf("After Argu\n");
+	arguments[i+1]=NULL;
+	switch (pid=fork()) //fork for returning to parent process
+		{
+			case -1: perror("fork");
+			case 0: 
+				{	printf("SystemProg case 0\n");
+
+ 					error = execv(exe1,arguments);
+					if(error!=-1) {
+							exit(666);
+						}
+					//printf("Exe2:%s\n",exe2);
+					error = execv(exe2,arguments);
+					if(error==-1){
+							printf("Can't find programm\n");
+						}
+					exit(742);
+				}
+			default: //parent waits for exit in child
+				{	printf("SystemProg default\n");
+
+					wait(&status);
+					break;
+					}
+		}
+}
+
 
 /* everything starts here */
 int main(void) 
@@ -373,41 +373,41 @@ void processLine(/*const*/ char * line)
 				else
 					printf("Bad arguments.\n");
 				break;
-			case PROG : 
-				if(!(command->prog.background))
-					setup_signal_handler(SIGINT, SIG_DFL); //interrupt default
+			case PROG :
+            			if (!command->prog.background) {
+                			setup_signal_handler(SIGINT, SIG_DFL);} //interrupt default
 				if(command->prog.output) //Command > file
 				{	
-					FILE *file; //TODO: reihenfolge: 1. command prüfen, dann datei write
-					file=fopen((command->prog.output),"w");	// Datei neu/überschreiben
-					if(file)
-					{	
-						char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
-						int i;
-						for(i = 1; i < command->prog.argc; i++) // rest anhängen
-						{
-						   strcat(fileCmd, " ");
-						   strcat(fileCmd, command->prog.argv[i]);
-						}
-						//read unix pipe.
-						FILE *pipe = popen(fileCmd,"r");
-						if(pipe)
-						{
-							//while((fscanf(pipe,"%500s",line)) != EOF)
-								//fprintf(file,"%s\n",line);
+					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
+					int i;
+					for(i = 1; i < command->prog.argc; i++) // rest anhängen
+					{
+					   strcat(fileCmd, " ");
+					   strcat(fileCmd, command->prog.argv[i]);
+					}
+					//read unix pipe.
+					FILE *pipe = popen(fileCmd,"r");
+					if(pipe)
+					{
+						FILE *file;
+						file=fopen((command->prog.output),"w");	
+						// Datei neu/überschreiben
+						if(file)
+						{	
+						
 							while(fgets(line, sizeof(line), pipe))
 								fprintf(file,"%s",line);
-							pclose(pipe);
 							printf("Wrote to file.\n");
+							fclose(file);
 						}
 						else
-						   perror("Couldn't execute command.");
+						   perror("Couldn't write to file");
 
-						fclose(file);
+						pclose(pipe);
 					}
 					else
 					{
-						perror("Couldn't write to file");
+						perror("Couldn't execute command.");
 					}
 				}
 				else if(command->prog.input) //Command < file //TODO: something wrong here
@@ -419,13 +419,14 @@ void processLine(/*const*/ char * line)
 					{	perror("Wrong file input"); break; }
  					
 					int i = 0; char line[1024];
-					while(fgets(line, sizeof line, file) != NULL) /* read a line */
-					{	if(i == 1){command->prog.argv[1] = NULL;break;}
+					while(fgets(line, sizeof line, file) != NULL) // read a line
+					{	//if(i == 1){command->prog.argv[1] = NULL;break;}
 						i++;				
 						command->prog.argv[i] = line;
 					}
 					fclose(file); 
-					if(command->prog.argc > 1){command->prog.argc = 1;}
+					command->prog.argc = i+1;
+					//if(command->prog.argc > 1){command->prog.argc = 1;}
 					systemProg(command);
 				}
 				else if(command->prog.background)
@@ -451,6 +452,8 @@ void processLine(/*const*/ char * line)
 					//try system command
 					systemProg(command);
 				}
+            			if (!command->prog.background) {
+                			setup_signal_handler(SIGINT, SIG_IGN);} //Ignore anew
 				break;
 			case PIPE :
 				{//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output

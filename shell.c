@@ -27,6 +27,7 @@
 
 #include "parser.h"
 
+//struct cmds* command; //TODO: struct/static??
 static cmds* command;
 
 char cwd[1024];
@@ -147,6 +148,7 @@ void signal_handler(int signal)
 		case SIGSEGV:
 			printf("Fehler: Ungültige Speicherreferenz.\n");
 			break;
+            //return;
 
 		case SIGUSR2:
 			printf("Hinweis: Benutzerdefiniertes Signal 2 erhalten.\r\n");

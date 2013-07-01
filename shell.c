@@ -59,7 +59,7 @@ int systemProg(cmds* command){
 	pid_t pid;
 	for(i = 0; i < command->prog.argc; i++) // collect args
 		{
-			arguments[i]=command->prog.argv[i];
+			arguments[i]=command->prog.argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
 		}
 	//special case ls without arguments -> show current dir
 	if(strcmp(input,"ls")==0 && command->prog.argc == 1)
@@ -79,9 +79,10 @@ int systemProg(cmds* command){
 					if(error!=-1) {
 							exit(666);
 						}
+					//printf("Exe2:%s\n",exe2);
 					error = execv(exe2,arguments);
 					if(error==-1){
-							printf("Cant find programm");
+							printf("Can't find programm\n");
 						}
 					exit(742);
 				}
@@ -103,9 +104,9 @@ void signal_handler(int signal)
 			printf("Fehler: Die Verbindung wurde beendet.\r\n");
 			break;
 
-		case SIGINT: // TODO: Gestartetes Programm in der Shell beenden?
+		case SIGINT:
 			/* ignore because this shell shouldn't be interrupted */
-			/* children will be interruptable */
+			printf("^C\n");
 			break;
 
 		case SIGQUIT:
@@ -129,7 +130,7 @@ void signal_handler(int signal)
 			break;
 
 		case SIGCHLD:
-			//printf("Hinweis: Der Status eines Kind-Prozess hat sich geändert.\r\n" );
+			//printf("Hinweis: Der Status eines Kind-Prozesses hat sich geändert.\r\n" );
 			return;
 
 		case SIGFPE:
@@ -145,7 +146,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGSEGV:
-			printf("Fehler: Ungültige Speicherreferenz.");
+			printf("Fehler: Ungültige Speicherreferenz.\n");
 			break;
             //return;
 
@@ -154,7 +155,7 @@ void signal_handler(int signal)
 			return;
 
 		case SIGPIPE:
-			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.");
+			printf("Fehler: Die Pipe-Kommunikation wurde unterbrochen.\n");
 			return;
 
 		case SIGALRM:
@@ -286,7 +287,6 @@ int main(void)
 	memset(prompt, 0, 1024); //??
 
 	/* setting user variables for prompt */
-	// TODO: nur Teil des Pfades?
 	if (getcwd(cwd, sizeof(cwd)) == NULL)
            perror("getcwd() error");
 
@@ -374,9 +374,11 @@ void processLine(/*const*/ char * line)
 					printf("Bad arguments.\n");
 				break;
 			case PROG : 
-				if(command->prog.output) //CMD > file
+				if(!(command->prog.background))
+					setup_signal_handler(SIGINT, SIG_DFL); //interrupt default
+				if(command->prog.output) //Command > file
 				{	
-					FILE *file;
+					FILE *file; //TODO: reihenfolge: 1. command prüfen, dann datei write
 					file=fopen((command->prog.output),"w");	// Datei neu/überschreiben
 					if(file)
 					{	
@@ -391,8 +393,8 @@ void processLine(/*const*/ char * line)
 						FILE *pipe = popen(fileCmd,"r");
 						if(pipe)
 						{
-							/*while((fscanf(pipe,"%500s",line)) != EOF)
-								fprintf(file,"%s\n",line);*/
+							//while((fscanf(pipe,"%500s",line)) != EOF)
+								//fprintf(file,"%s\n",line);
 							while(fgets(line, sizeof(line), pipe))
 								fprintf(file,"%s",line);
 							pclose(pipe);
@@ -408,12 +410,26 @@ void processLine(/*const*/ char * line)
 						perror("Couldn't write to file");
 					}
 				}
-				else if(command->prog.input) //CMD < file
-				{	printf("input\n");				
-					//execl(cwd, line, (char *) 0);
+				else if(command->prog.input) //Command < file //TODO: something wrong here
+				{
+					FILE *file;
+					file =  fopen(command->prog.input,"r");
+
+ 					if(!file)
+					{	perror("Wrong file input"); break; }
+ 					
+					int i = 0; char line[1024];
+					while(fgets(line, sizeof line, file) != NULL) /* read a line */
+					{	if(i == 1){command->prog.argv[1] = NULL;break;}
+						i++;				
+						command->prog.argv[i] = line;
+					}
+					fclose(file); 
+					if(command->prog.argc > 1){command->prog.argc = 1;}
+					systemProg(command);
 				}
 				else if(command->prog.background)
-				{	
+				{
 					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
 					int i;
 					for(i = 1; i < command->prog.argc; i++) // rest anhängen
@@ -421,7 +437,6 @@ void processLine(/*const*/ char * line)
 					   strcat(fileCmd, " ");
 					   strcat(fileCmd, command->prog.argv[i]);
 					}
-					printf("%s\n",fileCmd);
 					//read unix pipe.
 					FILE *pipe = popen(fileCmd,"r");
 					if(pipe)

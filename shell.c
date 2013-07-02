@@ -370,12 +370,12 @@ void processLine(/*const*/ char * line)
 					else
 						printf("Variable does not exist.\n");
 				}
-				else
+				elseSIG_DFL
 					printf("Bad arguments.\n");
 				break;
 			case PROG :
             			if (!command->prog.background) {
-                			setup_signal_handler(SIGINT, SIG_DFL);} //interrupt default
+                			setup_signal_handler(SIGINT, SIG_IGN);} //interrupt default
 				if(command->prog.output) //Command > file
 				{	
 					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern

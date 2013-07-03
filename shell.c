@@ -180,7 +180,6 @@ void signal_handler(int signal)
 			printf( "Hinweis: Unbekanntes Signal: %d\r\n", signal );
 			return;
 	}	
-	printf("exit in signal handler"); //TODO: wird nicht ausgegeben bei strg+c??
 	exit(signal);
 }
 
@@ -225,56 +224,6 @@ void closePipe(int *fd){
     close(fd[1]);
 }
 
-int systemProg(prog_args* cmd){
-	char exe1[256];
-	char exe2[256];
-	char *input = cmd->argv[0]; //sys prog
-	sprintf(exe1,"/usr/bin/%s",input); //alternative part
-	sprintf(exe2,"/bin/%s",input);
-	//printf("EXE:%s\n",exe1);
-	char *arguments[256];
-	int i;
-	int error;
-	int status;
-	pid_t pid;
-	for(i = 0; i < cmd->argc; i++) // collect args
-		{
-			arguments[i]=cmd->argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
-		}
-	//special case ls without arguments -> show current dir
-	if(strcmp(input,"ls")==0 && cmd->argc == 1)
-		{
-			arguments[0] = "ls";
-			arguments[1] = ".";
-			arguments[2] = NULL;
-		}
-	//printf("After Argu\n");
-	arguments[i+1]=NULL;
-	switch (pid=fork()) //fork for returning to parent process
-		{
-			case -1: perror("fork");
-			case 0: 
-				{	printf("SystemProg case 0\n");
-
- 					error = execv(exe1,arguments);
-					if(error!=-1) {
-							exit(666);
-						}
-					//printf("Exe2:%s\n",exe2);
-					error = execv(exe2,arguments);
-					if(error==-1){
-							printf("Can't find programm\n");
-						}
-					exit(742);
-				}
-			default: //parent waits for exit in child
-				{	printf("SystemProg default\n");
-
-					wait(&status);
-					break;
-					}
-		}
-}
 
 
 /* everything starts here */
@@ -383,7 +332,7 @@ void processLine(/*const*/ char * line)
 				break;
 			case PROG :
 			{	pid_t child_pid = fork(); //Start in own process
-
+				int error;
 				if (child_pid == -1) //failure
 				{	perror("fork failed"); break; }
 
@@ -402,10 +351,12 @@ void processLine(/*const*/ char * line)
         				command->prog.argv[command->prog.argc] = NULL;
 
         				// execute program
-					execvpe(command->prog.argv[0], command->prog.argv, NULL);
-
+					error = execvpe(command->prog.argv[0], command->prog.argv, NULL);
+					if(error!=-1){
+						exit(123);
+					}
 					//Couldn't execute
-        				perror("Couldn't find program");
+					perror("Couldn't find program");
 					exit(742);
     				}
 				else // parent process
@@ -456,12 +407,86 @@ void processLine(/*const*/ char * line)
 					break;
 				} else {
 					//multiple pipes
-					printf("MULTIPIP\n");
-                }
-                
-				break;}
+					//printf("MULTIPIP\n");
+					int pcounter = 2;
+					pid_t pids[30];
+					int i;
+					//prog pointers
+					prog_args* pnext = command->prog.next->next;
+					//execute 
+					char** enext = pnext->argv;
+					//char** enext = pnext->argv;
+					//pipe
+					int fd[2];
+					int fdd[2];
+					
+					pipe(fdd);
+					pipe(fd);
+					if((pids[0]=fork())<0){
+						perror("fork");
+						break;
+					}
+					if(pids[0]==0){
+						dup2(fdd[WRITE_END], 1);
+						closePipe(fdd);
+						execvp(command->prog.argv[0], command->prog.argv);
+						break;
+					} 
+					if((pids[1]=fork())<0){
+						perror("fork");
+					}
+					if(pids[1]==0){
+						dup2(fdd[READ_END],0);
+						closePipe(fdd);
+						dup2(fd[WRITE_END],1);
+						closePipe(fd);
+						execvp(command->prog.next->argv[0],command->prog.next->argv);
+						break;
+
+					}
+					while(pnext != NULL){
+                        if((pids[pcounter]=fork())<0){
+                            perror("fork");
+                            break;
+                        }
+                        if(pids[pcounter]==0){
+                            if((pnext->next)==NULL){
+                                dup2(fd[READ_END],0);
+                                //printf("InnerPipe\n");
+                                closePipe(fd);
+                                closePipe(fdd);
+                                //printf("Enext:%s\n",enext[0]);
+                                int fu ;
+                                fu = execvp(enext[0],enext);
+                                break;
+							} else {
+								printf("GO ON \n");
+								break;
+							}
+						}
+						//printf("PARENT\n");
+						closePipe(fdd);
+						//closePipe(fd);
+						//waitpid(pids[pcounter],NULL,0);
+						pnext=pnext->next;
+						pcounter++;
+						break;
+                        }      
+                        
+					closePipe(fd);
+					closePipe(fdd);
+					for(i=0;i<=pcounter;i++){
+						//printf("Wait for PID%i\n",i);
+						waitpid(pids[i],NULL,0);
+					}
+					break;
+                } //Multipipes end
+				break;
+				}
 			default:
+			
 				printf("Command not found\n");
+				
 		}
 		// get next command
 		command = command->next;

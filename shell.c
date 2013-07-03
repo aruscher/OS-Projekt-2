@@ -54,9 +54,9 @@ void signal_handler(int signal)
 			break;
 
 		case SIGINT:
-			// ignore because this shell shouldn't be interrupted
+			// ignore because this shell shouldn't be interrupted (but in foreground prog)
 			printf("^C\n");
-			return;
+			break;
 
 		case SIGQUIT:
 			printf("Hinweis: Quit-Signal erhalten. Shell wird beendet.\r\n");
@@ -176,7 +176,7 @@ void signal_handler(int signal)
 			printf( "Hinweis: Unbekanntes Signal: %d\r\n", signal );
 			return;
 	}	
-
+	printf("exit in signal handler"); //TODO: wird nicht ausgegeben bei strg+c??
 	exit(signal);
 }
 
@@ -191,7 +191,7 @@ void setup_signal_handler(int signal, void (*handler)(int))
 
 	/* sigaction() is used to change the action taken by a process on receipt of a specific signal. */
 	if (sigaction(signal, &sa, NULL) == -1) {
-		perror("installing signal handler failed");
+		perror("installing signal handler failed");	printf("exit install");
 		exit(EXIT_FAILURE);
 	}
 }
@@ -370,91 +370,49 @@ void processLine(/*const*/ char * line)
 					else
 						printf("Variable does not exist.\n");
 				}
-				elseSIG_DFL
+				else
 					printf("Bad arguments.\n");
 				break;
 			case PROG :
-            			if (!command->prog.background) {
-                			setup_signal_handler(SIGINT, SIG_IGN);} //interrupt default
-				if(command->prog.output) //Command > file
-				{	
-					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
-					int i;
-					for(i = 1; i < command->prog.argc; i++) // rest anhängen
-					{
-					   strcat(fileCmd, " ");
-					   strcat(fileCmd, command->prog.argv[i]);
-					}
-					//read unix pipe.
-					FILE *pipe = popen(fileCmd,"r");
-					if(pipe)
-					{
-						FILE *file;
-						file=fopen((command->prog.output),"w");	
-						// Datei neu/überschreiben
-						if(file)
-						{	
-						
-							while(fgets(line, sizeof(line), pipe))
-								fprintf(file,"%s",line);
-							printf("Wrote to file.\n");
-							fclose(file);
-						}
-						else
-						   perror("Couldn't write to file");
+			{	pid_t child_pid = fork(); //Start in own process
 
-						pclose(pipe);
-					}
-					else
-					{
-						perror("Couldn't execute command.");
-					}
-				}
-				else if(command->prog.input) //Command < file //TODO: something wrong here
-				{
-					FILE *file;
-					file =  fopen(command->prog.input,"r");
+				if (child_pid == -1) //failure
+				{	perror("fork failed"); break; }
 
- 					if(!file)
-					{	perror("Wrong file input"); break; }
- 					
-					int i = 0; char line[1024];
-					while(fgets(line, sizeof line, file) != NULL) // read a line
-					{	//if(i == 1){command->prog.argv[1] = NULL;break;}
-						i++;				
-						command->prog.argv[i] = line;
-					}
-					fclose(file); 
-					command->prog.argc = i+1;
-					//if(command->prog.argc > 1){command->prog.argc = 1;}
-					systemProg(command);
-				}
-				else if(command->prog.background)
+				if (child_pid == 0) // child process
 				{
-					char* fileCmd = command->prog.argv[0]; // arg value 0 speichern
-					int i;
-					for(i = 1; i < command->prog.argc; i++) // rest anhängen
+					if (!command->prog.background) // foreground program
+						setup_signal_handler(SIGINT, SIG_DFL); //enable interrupt
+
+        				if (command->prog.input) // Input-File -> set as standard in
+						freopen (command->prog.input, "r", stdin);
+
+        				if (command->prog.output) // Output-File -> set as standard out
+						freopen (command->prog.output, "w", stdout);
+
+        				// there has to be Null in the end
+        				command->prog.argv[command->prog.argc] = NULL;
+
+        				// execute program
+					execvpe(command->prog.argv[0], command->prog.argv, NULL);
+
+					//Couldn't execute
+        				perror("Couldn't find program");
+					exit(742);
+    				}
+				else // parent process
+				{
+					// foreground process
+					if (!command->prog.background) 
 					{
-					   strcat(fileCmd, " ");
-					   strcat(fileCmd, command->prog.argv[i]);
+            					// wait for child to finish
+            					int status = 0;
+            					if (waitpid(child_pid, &status, 0) == -1) 
+	                				perror("Child process not finish");
 					}
-					//read unix pipe.
-					FILE *pipe = popen(fileCmd,"r");
-					if(pipe)
-					{	printf("Execute in background ok.\n");
-						pclose(pipe);
-					}
-					else
-						perror("Couldn't execute command in background");
 				}
-				else 
-				{
-					//try system command
-					systemProg(command);
-				}
-            			if (!command->prog.background) {
-                			setup_signal_handler(SIGINT, SIG_IGN);} //Ignore anew
 				break;
+			}
 			case PIPE :
 				{//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
 				//break;*/  //Aufgabe Option Pipes

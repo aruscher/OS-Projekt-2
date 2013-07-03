@@ -435,17 +435,16 @@ void processLine(/*const*/ char * line)
 				if (test == NULL){
 					//only one pipe
 					//printf("SINGLE\n");
-					if((child1=fork())<0||(child2=fork())<0){
+					if((child1=fork())<0){
 						perror("fork");
 						exit(-1);
 					}
 					if(child1==0){
-						close(fd[READ_END]);
 						dup2(fd[WRITE_END], 1);
 						closePipe(fd);
 						execvp(command->prog.argv[0], command->prog.argv);
-
 					} 
+					child2 = fork();
 					if(child2==0) {
 						dup2(fd[READ_END],0);
 						closePipe(fd);

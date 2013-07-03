@@ -331,7 +331,8 @@ void processLine(/*const*/ char * line)
 					printf("Bad arguments.\n");
 				break;
 			case PROG :
-			{	pid_t child_pid = fork(); //Start in own process
+			{	
+				pid_t child_pid = fork(); //Start in own process
 				int error;
 				if (child_pid == -1) //failure
 				{	perror("fork failed"); break; }
@@ -340,6 +341,8 @@ void processLine(/*const*/ char * line)
 				{
 					if (!command->prog.background) // foreground program
 						setup_signal_handler(SIGINT, SIG_DFL); //enable interrupt
+					else
+						freopen ("/dev/null", "w", stdout); //ignore output
 
         				if (command->prog.input) // Input-File -> set as standard in
 						freopen (command->prog.input, "r", stdin);
@@ -352,9 +355,10 @@ void processLine(/*const*/ char * line)
 
         				// execute program
 					error = execvpe(command->prog.argv[0], command->prog.argv, NULL);
-					if(error!=-1){
+					
+					if(error!=-1)
 						exit(123);
-					}
+
 					//Couldn't execute
 					perror("Couldn't find program");
 					exit(742);
@@ -373,8 +377,7 @@ void processLine(/*const*/ char * line)
 				break;
 			}
 			case PIPE :
-				{//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
-				//break;*/  //Aufgabe Option Pipes
+				{
 				pid_t child1; //child1
 				pid_t child2; //child2
 				int fd[2];

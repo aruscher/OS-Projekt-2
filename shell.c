@@ -27,6 +27,10 @@
 
 #include "parser.h"
 
+
+#define READ_END 0
+#define WRITE_END 1
+
 static cmds* command;
 
 char cwd[1024];
@@ -216,11 +220,15 @@ void setup_remaining_signal_handlers(void)
 	}
 }
 
+void closePipe(int *fd){
+    close(fd[0]);
+    close(fd[1]);
+}
 
-int systemProg(cmds* command){
+int systemProg(prog_args* cmd){
 	char exe1[256];
 	char exe2[256];
-	char *input = command->prog.argv[0]; //sys prog
+	char *input = cmd->argv[0]; //sys prog
 	sprintf(exe1,"/usr/bin/%s",input); //alternative part
 	sprintf(exe2,"/bin/%s",input);
 	//printf("EXE:%s\n",exe1);
@@ -229,12 +237,12 @@ int systemProg(cmds* command){
 	int error;
 	int status;
 	pid_t pid;
-	for(i = 0; i < command->prog.argc; i++) // collect args
+	for(i = 0; i < cmd->argc; i++) // collect args
 		{
-			arguments[i]=command->prog.argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
+			arguments[i]=cmd->argv[i];//printf("argument[%d]:%s\n",i,arguments[i]);
 		}
 	//special case ls without arguments -> show current dir
-	if(strcmp(input,"ls")==0 && command->prog.argc == 1)
+	if(strcmp(input,"ls")==0 && cmd->argc == 1)
 		{
 			arguments[0] = "ls";
 			arguments[1] = ".";
@@ -416,8 +424,42 @@ void processLine(/*const*/ char * line)
 			case PIPE :
 				{//cmd->prog.next,cmd->prog,cmd->prog.input,cmd->prog.output
 				//break;*/  //Aufgabe Option Pipes
-				printf("Input: %s\n",command->prog.input);
-				printf("Output: %s\n",command->prog.output);
+				pid_t child1; //child1
+				pid_t child2; //child2
+				int fd[2];
+				pipe(fd);
+				int status;
+				char buffer[10000];
+				//parent read and child write!!!!
+				prog_args* test = command->prog.next->next;
+				if (test == NULL){
+					//only one pipe
+					//printf("SINGLE\n");
+					if((child1=fork())<0||(child2=fork())<0){
+						perror("fork");
+						exit(-1);
+					}
+					if(child1==0){
+						close(fd[READ_END]);
+						dup2(fd[WRITE_END], 1);
+						closePipe(fd);
+						execvp(command->prog.argv[0], command->prog.argv);
+
+					} 
+					if(child2==0) {
+						dup2(fd[READ_END],0);
+						closePipe(fd);
+						execvp(command->prog.next->argv[0],command->prog.next->argv);
+					}
+					closePipe(fd);
+					waitpid(child1,NULL,0);
+					waitpid(child2,NULL,0);
+					break;
+				} else {
+					//multiple pipes
+					printf("MULTIPIP\n");
+                }
+                
 				break;}
 			default:
 				printf("Command not found\n");
